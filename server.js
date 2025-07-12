@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const cron = require('node-cron');
+const config = require('./config');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -102,7 +103,7 @@ function connectToOCPP(deviceId) {
     }
   }
 
-  const wsUrl = `ws://test.1charging.com/ws/ocpp/16/${deviceId}`;
+  const wsUrl = `${config.ocppServerUrl}${deviceId}`;
   console.log(`Connecting to OCPP server: ${wsUrl}`);
 
   const webSocket = new WebSocket(wsUrl, ['ocpp1.6']);
@@ -949,8 +950,8 @@ app.get('/api/transaction-info', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-  console.log(`OCPP Simulator server running on port ${PORT}`);
+app.listen(config.port, () => {
+  console.log(`OCPP Simulator server running on port ${config.port}`);
 });
 
 // Global error handler to prevent crashes
