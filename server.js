@@ -545,7 +545,8 @@ function simulateStopTransaction(remoteStopPayload, deviceId) {
           transactionId,
           meterStop: connector.transaction.lastMeterValue || connector.transaction.meterStart,
           timestamp: new Date().toISOString(),
-          idTag: connector.transaction.idTag
+          idTag: connector.transaction.idTag,
+          stopReason: 'PowerLoss'
         };
         sendOCPPMessage('StopTransaction', stopPayload, targetDeviceId);
         // Stop MeterValues
@@ -946,6 +947,61 @@ app.get('/api/transaction-info', (req, res) => {
     res.json({ transaction });
   } else {
     res.json({ transaction: null });
+  }
+});
+
+// API to manually stop charging
+app.post('/api/stop-charging', (req, res) => {
+  const { deviceId, connectorId } = req.body;
+  
+  if (!deviceId || !connectorId) {
+    return res.status(400).json({ success: false, message: 'Device ID and connector ID are required' });
+  }
+
+  if (!chargingPoints[deviceId]) {
+    return res.status(404).json({ success: false, message: 'Charging point not found' });
+  }
+
+  const connector = chargingPoints[deviceId].connectors[connectorId];
+  if (!connector) {
+    return res.status(404).json({ success: false, message: 'Connector not found' });
+  }
+
+  if (!connector.transaction || !connector.transaction.transactionId) {
+    return res.status(400).json({ success: false, message: 'No active transaction found for this connector' });
+  }
+
+  try {
+    // Send StopTransaction
+    const stopPayload = {
+      transactionId: connector.transaction.transactionId,
+      meterStop: connector.transaction.lastMeterValue || connector.transaction.meterStart,
+      timestamp: new Date().toISOString(),
+      idTag: connector.transaction.idTag,
+      stopReason: 'PowerLoss'
+    };
+    
+    sendOCPPMessage('StopTransaction', stopPayload, deviceId);
+    
+    // Stop MeterValues
+    stopMeterValues(deviceId, connectorId);
+    
+    // Update status to Available
+    connector.status = 'Available';
+    sendStatusNotification('Available', deviceId, connectorId);
+    
+    // Remove transaction info
+    connector.transaction = null;
+    
+    res.json({ 
+      success: true, 
+      message: `Charging stopped for ${deviceId}:${connectorId}`,
+      transactionId: stopPayload.transactionId,
+      meterStop: stopPayload.meterStop
+    });
+  } catch (error) {
+    console.error(`Error stopping charging for ${deviceId}:${connectorId}:`, error);
+    res.status(500).json({ success: false, message: 'Error stopping charging' });
   }
 });
 

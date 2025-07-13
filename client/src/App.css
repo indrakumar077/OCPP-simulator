@@ -408,6 +408,52 @@ tr:hover {
   border-color: var(--accent-primary);
 }
 
+/* Stop Charging Section */
+.stop-charging-section {
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.stop-charging-section h4 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-md);
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.transaction-info {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-md);
+  border: 1px solid var(--border-color);
+}
+
+.active-transaction {
+  color: var(--text-secondary);
+}
+
+.active-transaction p {
+  margin-bottom: var(--spacing-xs);
+  font-size: 0.875rem;
+}
+
+.active-transaction strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.active-transaction button {
+  margin-top: var(--spacing-md);
+}
+
+.no-transaction {
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: var(--spacing-md);
+}
+
 /* Logs */
 .logs {
   max-height: 300px;

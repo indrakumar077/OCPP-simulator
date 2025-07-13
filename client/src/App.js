@@ -360,6 +360,25 @@ function App() {
     }
   };
 
+  const handleStopCharging = async (deviceId = selectedChargingPoint, connectorId = selectedConnector) => {
+    if (!deviceId || !connectorId) {
+      addLog('Please select a charging point and connector first', 'error');
+      return;
+    }
+
+    try {
+      const response = await axios.post('/api/stop-charging', { deviceId, connectorId });
+      if (response.data.success) {
+        addLog(`Charging stopped for ${deviceId}:${connectorId}. Transaction ID: ${response.data.transactionId}, Meter Stop: ${response.data.meterStop}`, 'success');
+        fetchStatus(); // Refresh to get updated status
+      }
+    } catch (error) {
+      console.error('Error stopping charging:', error);
+      const errorMessage = error.response?.data?.message || error.message;
+      addLog(`Error stopping charging: ${errorMessage}`, 'error');
+    }
+  };
+
   const calculateSessionKWh = (transaction) => {
     if (!transaction || !transaction.lastMeterValue || !transaction.meterStart) return 0;
     return ((transaction.lastMeterValue - transaction.meterStart) / 1000).toFixed(3);
@@ -587,6 +606,34 @@ function App() {
                   </button>
                 ))}
               </div>
+              
+              {/* Stop Charging Section */}
+              <div className="stop-charging-section">
+                <h4>Stop Charging</h4>
+                <div className="transaction-info">
+                  {transactionInfo && transactionInfo.transactionId ? (
+                    <div className="active-transaction">
+                      <p><strong>Active Transaction:</strong> {transactionInfo.transactionId}</p>
+                      <p><strong>IdTag:</strong> {transactionInfo.idTag}</p>
+                      <p><strong>Meter Start:</strong> {transactionInfo.meterStart} Wh</p>
+                      <p><strong>Current Meter:</strong> {transactionInfo.lastMeterValue || transactionInfo.meterStart} Wh</p>
+                      <p><strong>Duration:</strong> {calculateSessionDuration(transactionInfo)}</p>
+                      <p><strong>kWh Consumed:</strong> {calculateSessionKWh(transactionInfo)} kWh</p>
+                      <button
+                        onClick={() => handleStopCharging()}
+                        className="btn btn-danger"
+                        disabled={!connectionStatus.connected}
+                      >
+                        Stop Charging
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="no-transaction">
+                      <p>No active transaction for this connector.</p>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="card">
@@ -674,6 +721,7 @@ function App() {
                       <th>Duration</th>
                       <th>kWh Consumed</th>
                       <th>IdTag</th>
+                      <th>Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -690,6 +738,17 @@ function App() {
                         <td>{session.duration}</td>
                         <td>{session.kwhConsumed} kWh</td>
                         <td>{session.idTag}</td>
+                        <td>
+                          {session.transactionId && (
+                            <button
+                              onClick={() => handleStopCharging(selectedChargingPoint, session.connectorId)}
+                              className="btn btn-danger btn-sm"
+                              disabled={!connectionStatuses[selectedChargingPoint]?.isConnected}
+                            >
+                              Stop Charging
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
